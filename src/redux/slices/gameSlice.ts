@@ -9,6 +9,8 @@ interface GameState {
     token: string;
     complexity: number;
   };
+  canvasSpeed: number;
+  droneDirection: number;
 }
 
 const initialState: GameState = {
@@ -18,6 +20,8 @@ const initialState: GameState = {
     token: "",
     complexity: 0,
   },
+  canvasSpeed: 0,
+  droneDirection: 0,
 };
 
 export const gameSlice = createSlice({
@@ -27,10 +31,27 @@ export const gameSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
     },
+
+    setCanvasSpeed: (state, action) => {
+      const speed = state.canvasSpeed;
+      let newSpeed = 1;
+      if (action.payload === "down") {
+        newSpeed = speed >= 2 ? speed - 1 : 1;
+      } else if (action.payload === "up") {
+        newSpeed = speed < 10 ? speed + 1 : 10;
+      } else if (action.payload === "stop") {
+        newSpeed = 0;
+      }
+      state.canvasSpeed = newSpeed;
+    },
+
+    setDroneDirection: (state, action) => {
+      state.droneDirection = action.payload;
+    },
   },
 });
 
-export const { setUser } = gameSlice.actions;
+export const { setUser, setCanvasSpeed, setDroneDirection } = gameSlice.actions;
 
 export const gameState = (state: RootState) => state.game;
 

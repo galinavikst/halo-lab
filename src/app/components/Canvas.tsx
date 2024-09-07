@@ -1,85 +1,56 @@
 "use client";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  gameState,
+  setDroneDirection,
+  setCanvasSpeed,
+} from "@/redux/slices/gameSlice";
 import React, { useRef, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { SPEEDS } from "@/utils/constants";
 
 const Canvas = (props: { caveData: number[][] }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dispatch = useAppDispatch();
+  const { droneDirection, canvasSpeed } = useAppSelector(gameState);
+
   const [dronePosition, setDronePosition] = useState<number>(250);
-  const [droneDirection, setDroneDirection] = useState<number>(1);
   const [startIndex, setStartIndex] = useState<number>(0);
   const [droneSpeed, setDroneSpeed] = useState<number>(0);
-  const [canvasSpeedInterval, setCanvasSpeedInterval] = useState<number | null>(
-    null
-  );
   const [dataChunk, setDataChunk] = useState<number[][] | null>(null);
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [canvasIntervalId, setCanvasIntervalId] =
+    useState<NodeJS.Timeout | null>(null);
   const [droneId, setDroneId] = useState<NodeJS.Timeout | null>(null);
 
-  const speeds = [
-    {
-      speed: 1,
-      interval: 800,
-    },
-    {
-      speed: 2,
-      interval: 500,
-    },
-    {
-      speed: 3,
-      interval: 450,
-    },
-    {
-      speed: 4,
-      interval: 400,
-    },
-    {
-      speed: 5,
-      interval: 350,
-    },
-    {
-      speed: 6,
-      interval: 300,
-    },
-    {
-      speed: 7,
-      interval: 250,
-    },
-    {
-      speed: 8,
-      interval: 200,
-    },
-    {
-      speed: 9,
-      interval: 100,
-    },
-    {
-      speed: 10,
-      interval: 50,
-    },
-  ];
-  const wallHeight = 10;
   const dataChunkLength = 50; // canvas h(500) \ wallHeight
 
-  const startGame = () => {
-    if (intervalId) clearInterval(intervalId);
-    if (droneId) clearInterval(droneId);
-
-    if (canvasSpeedInterval) {
+  const setCanvasInterval = () => {
+    if (canvasIntervalId) clearInterval(canvasIntervalId);
+    if (canvasSpeed) {
       const id = setInterval(() => {
         setStartIndex((index) => index + 1);
-      }, canvasSpeedInterval);
+      }, SPEEDS.find((el) => el.speed === canvasSpeed)?.interval);
 
-      setIntervalId(id);
+      setCanvasIntervalId(id);
+    }
+  };
+
+  const stopCanvasInterval = () => {
+    if (canvasIntervalId) {
+      clearInterval(canvasIntervalId);
+      setCanvasIntervalId(null);
+      dispatch(setCanvasSpeed("stop"));
     }
   };
 
   const stopGame = () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      setIntervalId(null);
-      setCanvasSpeedInterval(null);
-    }
-
+    stopCanvasInterval();
     stopDroneInterval();
+  };
+
+  const startGame = () => {
+    dispatch(setCanvasSpeed("start"));
+    setDroneSpeed(1);
   };
 
   //  set drone speed
@@ -89,8 +60,7 @@ const Canvas = (props: { caveData: number[][] }) => {
     if (droneSpeed) {
       const id = setInterval(() => {
         setDronePosition((position) => position + droneDirection);
-        console.log(droneSpeed);
-      }, speeds.find((el) => el.speed === droneSpeed)?.interval);
+      }, SPEEDS.find((el) => el.speed === droneSpeed)?.interval);
 
       setDroneId(id);
     }
@@ -111,17 +81,17 @@ const Canvas = (props: { caveData: number[][] }) => {
     setDataChunk(newChunk);
   };
 
-  const handleKeyBoard = (e: KeyboardEvent) => {
+  const handleKeyPress = (e: KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
       setDroneSpeed((speed) => (speed >= 2 ? speed - 1 : 1));
-      setDroneDirection(-1);
+      dispatch(setDroneDirection(-1));
     } else if (e.key === "ArrowRight") {
       setDroneSpeed((speed) => (speed < 10 ? speed + 1 : 10));
-      setDroneDirection(1);
+      dispatch(setDroneDirection(1));
     } else if (e.key === "ArrowDown") {
-      setCanvasSpeedInterval((state) => (state as number) + 100);
+      dispatch(setCanvasSpeed("down"));
     } else if (e.key === "ArrowUp") {
-      setCanvasSpeedInterval((state) => (state as number) - 100);
+      dispatch(setCanvasSpeed("up"));
     }
   };
 
@@ -130,8 +100,8 @@ const Canvas = (props: { caveData: number[][] }) => {
   }, [droneSpeed, droneDirection]);
 
   useEffect(() => {
-    startGame();
-  }, [canvasSpeedInterval]);
+    setCanvasInterval();
+  }, [canvasSpeed]);
 
   useEffect(() => {
     getDataChunk();
@@ -139,41 +109,114 @@ const Canvas = (props: { caveData: number[][] }) => {
 
   useEffect(() => {
     getDataChunk();
-    document.addEventListener("keydown", handleKeyBoard);
+    document.addEventListener("keydown", handleKeyPress);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyBoard);
+      document.removeEventListener("keydown", handleKeyPress);
     };
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas?.getContext("2d");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const wallHeight = 10;
+    const droneWidth = 10;
+    const droneY = 0; // top-0
+
+    // drawing styles
     ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
 
     const centerX = canvas.width / 2;
 
-    // clear before drawing
+    // Clear the canvas before drawing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    dataChunk &&
+    if (dataChunk) {
+      if (dataChunk.length === 1) {
+        toast.success("Congratulations!");
+        console.log("end of cave");
+        stopGame();
+        return;
+      }
+
+      const leftWallPoints: { x: number; y: number }[] = [];
+      const rightWallPoints: { x: number; y: number }[] = [];
+
+      // coordinates of the left and right walls
       dataChunk.forEach((el, index) => {
-        let left = el[0];
-        let right = el[1];
-        let x;
-        let width;
+        const left = el[0];
+        const right = el[1];
+        const xLeft = centerX + left;
+        const xRight = centerX + right;
+        const y = index * wallHeight;
 
-        x = centerX + left;
-        width = right - left;
-
-        if (right < left) {
-          width = left - right;
-        }
-
-        ctx.fillRect(x, index * wallHeight, width, wallHeight); // Increment Y position for each row
+        leftWallPoints.push({ x: xLeft, y });
+        rightWallPoints.push({ x: xRight, y });
       });
+
+      // Draw the left wall by connecting the points
+      ctx.beginPath();
+      ctx.moveTo(leftWallPoints[0].x, leftWallPoints[0].y);
+      leftWallPoints.forEach((point) => {
+        ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+
+      // Draw the right wall by connecting the points
+      ctx.beginPath();
+      ctx.moveTo(rightWallPoints[0].x, rightWallPoints[0].y);
+      rightWallPoints.forEach((point) => {
+        ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+
+      // Fill the area between the left and right walls
+      ctx.beginPath();
+      ctx.moveTo(leftWallPoints[0].x, leftWallPoints[0].y);
+
+      // Draw the left wall upwards
+      leftWallPoints.forEach((point) => {
+        ctx.lineTo(point.x, point.y);
+      });
+
+      // Draw the right wall downwards
+      for (let i = rightWallPoints.length - 1; i >= 0; i--) {
+        ctx.lineTo(rightWallPoints[i].x, rightWallPoints[i].y);
+      }
+
+      ctx.closePath();
+      ctx.fill();
+
+      // Collision detection
+      const droneX = dronePosition; // X-coordinate of the drone
+
+      // Find the wall segment where the drone is located
+      const droneRow = Math.floor(droneY / wallHeight);
+      if (droneRow < leftWallPoints.length) {
+        const leftWallX = leftWallPoints[droneRow].x;
+        const rightWallX = rightWallPoints[droneRow].x;
+
+        // Check if the drone is colliding with the walls
+        if (
+          droneX < leftWallX + droneWidth ||
+          droneX + droneWidth > rightWallX
+        ) {
+          console.log(
+            droneX,
+            leftWallPoints,
+            rightWallX,
+            "Collision detected!"
+          );
+          toast.error("The drone has been destroyed!");
+          //stopGame();
+        }
+      }
+    }
   }, [dataChunk]);
 
   return (
@@ -182,7 +225,7 @@ const Canvas = (props: { caveData: number[][] }) => {
         className=" bg-slate-600 border-2 border-black w-[500px]"
         ref={canvasRef}
         width={500}
-        height={500}
+        height={490}
         {...props}
       />
 
@@ -191,17 +234,10 @@ const Canvas = (props: { caveData: number[][] }) => {
         className={`absolute -top-[5px]  translate-x-[-50%] rotate-45 bg-green-600 h-3 w-3`}
       ></div>
       <button
-        onClick={
-          intervalId
-            ? stopGame
-            : () => {
-                setDroneSpeed(1);
-                setCanvasSpeedInterval(1000);
-              }
-        }
+        onClick={canvasIntervalId ? stopGame : startGame}
         className="p-3 border-2 rounded-md my-5"
       >
-        {intervalId ? "Stop" : "Play"}
+        {canvasIntervalId ? "Stop" : "Play"}
       </button>
     </div>
   );

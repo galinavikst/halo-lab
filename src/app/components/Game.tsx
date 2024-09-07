@@ -8,15 +8,14 @@ import Canvas from "./Canvas";
 import { Oval } from "react-loader-spinner";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { gameState, setUser } from "@/redux/slices/gameSlice";
-import toast from "react-hot-toast";
+import Gauges from "./Gauges";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 const Game = () => {
-  const { user } = useAppSelector(gameState);
-  console.log(user);
-
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector(gameState);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [caveData, setCaveData] = useState<number[][]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>("");
@@ -34,7 +33,6 @@ const Game = () => {
         }).unwrap();
         if (!user.id) getUserToken(resp.id);
       } catch (error) {
-        toast.error("something went wrong");
         console.error(error);
       }
     };
@@ -58,7 +56,7 @@ const Game = () => {
     dispatch(setUser({ ...user, id, token }));
   };
 
-  // WebSocket connection handling
+  // wsocket connection handling
   useEffect(() => {
     if (!user.id) return;
 
@@ -80,10 +78,8 @@ const Game = () => {
         setIsLoading(false);
         ws.close();
       }
-      console.log(message);
 
       if (message === "finished") {
-        console.log("onmessage");
         setIsLoading(false);
         setConnectionStatus(message);
         ws.close();
@@ -113,11 +109,12 @@ const Game = () => {
 
   return (
     <div className="w-[500px]">
-      {connectionStatus === "finished" && caveData.length !== 0 ? (
+      {caveData.length >= 50 ? (
         <>
           <div>
             {user.name}, complexity: {user.complexity}
           </div>
+          <Gauges />
           <Canvas caveData={caveData} />
         </>
       ) : (
