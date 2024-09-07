@@ -5,11 +5,19 @@ import {
 } from "@/redux/slices/apiSlice";
 import React, { useEffect, useState } from "react";
 import Canvas from "./Canvas";
+import { Oval } from "react-loader-spinner";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { gameState, setUser } from "@/redux/slices/gameSlice";
+import toast from "react-hot-toast";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 const Game = () => {
-  const [user, setUser] = useState<{ id: string; token: string } | null>(null);
+  const { user } = useAppSelector(gameState);
+  console.log(user);
+
+  const dispatch = useAppDispatch();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [caveData, setCaveData] = useState<number[][]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>("");
 
@@ -21,50 +29,62 @@ const Game = () => {
     const initiateGame = async () => {
       try {
         const resp = await addUser({
-          name: "test",
-          complexity: 1,
+          name: user.name,
+          complexity: user.complexity,
         }).unwrap();
-        getUserToken(resp.id);
+        if (!user.id) getUserToken(resp.id);
       } catch (error) {
-        console.error("Error during user initiation:", error);
+        toast.error("something went wrong");
+        console.error(error);
       }
     };
 
-    if (!user) {
+    if (!user.id) {
       initiateGame();
     }
   }, [user, addUser]);
 
   const getUserToken = async (id: string) => {
-    let userToken = "";
+    setIsLoading(true);
+
+    let token = "";
     const chunks = 4;
 
     for (let i = 1; i <= chunks; i++) {
       const { data } = await trigger({ chunkNo: i, id });
-      userToken += data?.chunk || "";
+      token += data?.chunk || "";
     }
 
-    setUser({ id, token: userToken });
+    dispatch(setUser({ ...user, id, token }));
   };
 
   // WebSocket connection handling
   useEffect(() => {
-    if (!user) return;
-
-    console.log(user);
+    if (!user.id) return;
 
     const ws = new WebSocket(WS_URL as string);
 
     ws.onopen = () => {
+      setIsLoading(true);
+
       setConnectionStatus("connected");
-      const playerAuthMessage = `player:${user.id}-${user.token}`;
-      ws.send(playerAuthMessage); // player authentication data
+
+      ws.send(`player:${user.id}-${user.token}`); // player authentication data
     };
 
     ws.onmessage = (event) => {
       const message = event.data;
 
+      if (message === "Player not found") {
+        setConnectionStatus(message);
+        setIsLoading(false);
+        ws.close();
+      }
+      console.log(message);
+
       if (message === "finished") {
+        console.log("onmessage");
+        setIsLoading(false);
         setConnectionStatus(message);
         ws.close();
       } else {
@@ -73,14 +93,16 @@ const Game = () => {
       }
     };
 
-    // ws.onerror = (error) => {
-    //   console.error("WebSocket error:", error);
-    //   setConnectionStatus("error");
-    // };
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setConnectionStatus("error");
+      setIsLoading(false);
+    };
 
-    // ws.onclose = () => {
-    //   ws.close();
-    // };
+    ws.onclose = () => {
+      ws.close();
+      setIsLoading(false);
+    };
 
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -90,10 +112,30 @@ const Game = () => {
   }, [user]);
 
   return (
-    <div>
-      <h1>Game</h1>
-      {connectionStatus === "finished" && caveData && (
-        <Canvas caveData={caveData} />
+    <div className="w-[500px]">
+      {connectionStatus === "finished" && caveData.length !== 0 ? (
+        <>
+          <div>
+            {user.name}, complexity: {user.complexity}
+          </div>
+          <Canvas caveData={caveData} />
+        </>
+      ) : (
+        <p>
+          {connectionStatus}
+          {connectionStatus === "Player not found" && " -> reload page"}
+        </p>
+      )}
+      {isLoading && (
+        <div className="w-fit m-auto p-10">
+          <Oval
+            visible={true}
+            height="80"
+            width="80"
+            color="#4fa94d"
+            ariaLabel="oval-loading"
+          />
+        </div>
       )}
     </div>
   );

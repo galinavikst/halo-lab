@@ -3,30 +3,34 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 interface GameState {
-  value: number;
+  user: {
+    name: string;
+    id: string | null;
+    token: string;
+    complexity: number;
+  };
 }
 
 const initialState: GameState = {
-  value: 0,
+  user: {
+    name: "",
+    id: null,
+    token: "",
+    complexity: 0,
+  },
 };
 
 export const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
-    increment: (state) => {
-      state.value += 1;
-    },
-    decrement: (state) => {
-      state.value -= 1;
-    },
-    incrementByAmount: (state, action: PayloadAction<number>) => {
-      state.value += action.payload;
+    setUser: (state, action) => {
+      state.user = action.payload;
     },
   },
 });
 
-export const { increment, decrement, incrementByAmount } = gameSlice.actions;
+export const { setUser } = gameSlice.actions;
 
 export const gameState = (state: RootState) => state.game;
 
