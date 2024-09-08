@@ -1,6 +1,6 @@
 import React from "react";
-import Game from "@/app/components/Game";
-import Gauges from "@/app/components/Gauges";
+import Game from "@/components/Game";
+import Gauges from "@/components/Gauges";
 
 const GamePage = () => {
   return (

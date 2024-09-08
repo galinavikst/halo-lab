@@ -1,6 +1,6 @@
-import Rules from "./components/Rules";
-import ScoreBoard from "./components/ScoreBoard";
-import UserBlock from "./components/UserBlock";
+import Rules from "../components/Rules";
+import ScoreBoard from "../components/ScoreBoard";
+import UserBlock from "../components/UserBlock";
 
 export default function Home() {
   return (
