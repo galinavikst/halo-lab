@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 interface GameState {
@@ -8,7 +7,9 @@ interface GameState {
     id: string | null;
     token: string;
     complexity: number;
+    score: number;
   };
+  startIndex: number;
   canvasSpeed: number;
   droneDirection: number;
 }
@@ -19,7 +20,9 @@ const initialState: GameState = {
     id: null,
     token: "",
     complexity: 0,
+    score: 0,
   },
+  startIndex: 0,
   canvasSpeed: 0,
   droneDirection: 0,
 };
@@ -48,10 +51,26 @@ export const gameSlice = createSlice({
     setDroneDirection: (state, action) => {
       state.droneDirection = action.payload;
     },
+
+    setStartIndex: (state) => {
+      state.startIndex = state.startIndex + 1;
+    },
+
+    setInitSlice: (state) => {
+      state.startIndex = 0;
+      state.droneDirection = 0;
+      state.canvasSpeed = 0;
+    },
   },
 });
 
-export const { setUser, setCanvasSpeed, setDroneDirection } = gameSlice.actions;
+export const {
+  setUser,
+  setInitSlice,
+  setCanvasSpeed,
+  setDroneDirection,
+  setStartIndex,
+} = gameSlice.actions;
 
 export const gameState = (state: RootState) => state.game;
 

@@ -4,18 +4,25 @@ import {
   gameState,
   setDroneDirection,
   setCanvasSpeed,
+  setStartIndex,
+  setUser,
+  setInitSlice,
 } from "@/redux/slices/gameSlice";
 import React, { useRef, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { SPEEDS } from "@/utils/constants";
+import { DRONE_SPEEDS, CANVAS_SPEEDS } from "@/utils/constants";
+import { IWallPoints } from "@/utils/types";
+import { ROUTES } from "@/utils/constants";
+import { useRouter } from "next/navigation";
 
 const Canvas = (props: { caveData: number[][] }) => {
+  const { push } = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dispatch = useAppDispatch();
-  const { droneDirection, canvasSpeed } = useAppSelector(gameState);
+  const { droneDirection, canvasSpeed, startIndex, user } =
+    useAppSelector(gameState);
 
   const [dronePosition, setDronePosition] = useState<number>(250);
-  const [startIndex, setStartIndex] = useState<number>(0);
   const [droneSpeed, setDroneSpeed] = useState<number>(0);
   const [dataChunk, setDataChunk] = useState<number[][] | null>(null);
   const [canvasIntervalId, setCanvasIntervalId] =
@@ -28,8 +35,8 @@ const Canvas = (props: { caveData: number[][] }) => {
     if (canvasIntervalId) clearInterval(canvasIntervalId);
     if (canvasSpeed) {
       const id = setInterval(() => {
-        setStartIndex((index) => index + 1);
-      }, SPEEDS.find((el) => el.speed === canvasSpeed)?.interval);
+        dispatch(setStartIndex());
+      }, CANVAS_SPEEDS.find((el) => el.speed === canvasSpeed)?.interval);
 
       setCanvasIntervalId(id);
     }
@@ -53,20 +60,18 @@ const Canvas = (props: { caveData: number[][] }) => {
     setDroneSpeed(1);
   };
 
-  //  set drone speed
   const setDroneInterval = () => {
     if (droneId) clearInterval(droneId);
 
     if (droneSpeed) {
       const id = setInterval(() => {
         setDronePosition((position) => position + droneDirection);
-      }, SPEEDS.find((el) => el.speed === droneSpeed)?.interval);
+      }, DRONE_SPEEDS.find((el) => el.speed === droneSpeed)?.interval);
 
       setDroneId(id);
     }
   };
 
-  // stop drone
   const stopDroneInterval = () => {
     if (droneId) {
       clearInterval(droneId);
@@ -93,6 +98,71 @@ const Canvas = (props: { caveData: number[][] }) => {
     } else if (e.key === "ArrowUp") {
       dispatch(setCanvasSpeed("up"));
     }
+  };
+
+  const saveToLocalStorage = () => {
+    const savedGames = localStorage.getItem("games");
+    if (savedGames) {
+      const gamesArray = JSON.parse(savedGames);
+
+      gamesArray.push({
+        name: user.name,
+        complexity: user.complexity,
+        score: getScore(props.caveData),
+      });
+
+      localStorage.setItem("games", JSON.stringify(gamesArray));
+    } else {
+      localStorage.setItem(
+        "games",
+        JSON.stringify([
+          {
+            name: user.name,
+            complexity: user.complexity,
+            score: user.score,
+          },
+        ])
+      );
+    }
+  };
+
+  const colissionDetection = (
+    leftWallPoints: IWallPoints[],
+    rightWallPoints: IWallPoints[]
+  ) => {
+    const droneX = dronePosition; // X-coordinate of the drone
+    const droneWidth = 10;
+    const wallHeight = 10;
+    const droneY = 0; // top-0 absolute
+
+    // Find the wall segment where the drone is located
+    const droneRow = Math.floor(droneY / wallHeight);
+    if (droneRow < leftWallPoints.length) {
+      const leftWallX = leftWallPoints[droneRow].x;
+      const rightWallX = rightWallPoints[droneRow].x;
+
+      // Check if the drone is colliding with the walls
+      if (droneX < leftWallX + droneWidth || droneX + droneWidth > rightWallX) {
+        toast.error("The drone has been destroyed!");
+        stopGame();
+        backHome();
+      }
+    }
+  };
+
+  const getScore = (arr: number[][]) => {
+    const wallSegment = arr.length / 50;
+    const score =
+      Math.ceil(startIndex / wallSegment) * (user.complexity + canvasSpeed);
+
+    return score.toFixed(2);
+  };
+
+  const backHome = () => {
+    dispatch(setUser({ ...user, id: null }));
+    dispatch(setInitSlice());
+    setDataChunk(null);
+    push(ROUTES.home);
   };
 
   useEffect(() => {
@@ -123,8 +193,6 @@ const Canvas = (props: { caveData: number[][] }) => {
     if (!ctx) return;
 
     const wallHeight = 10;
-    const droneWidth = 10;
-    const droneY = 0; // top-0
 
     // drawing styles
     ctx.fillStyle = "#fff";
@@ -139,13 +207,15 @@ const Canvas = (props: { caveData: number[][] }) => {
     if (dataChunk) {
       if (dataChunk.length === 1) {
         toast.success("Congratulations!");
-        console.log("end of cave");
+        dispatch(setUser({ ...user, score: getScore(props.caveData) }));
+        saveToLocalStorage();
         stopGame();
+        backHome();
         return;
       }
 
-      const leftWallPoints: { x: number; y: number }[] = [];
-      const rightWallPoints: { x: number; y: number }[] = [];
+      const leftWallPoints: IWallPoints[] = [];
+      const rightWallPoints: IWallPoints[] = [];
 
       // coordinates of the left and right walls
       dataChunk.forEach((el, index) => {
@@ -192,30 +262,7 @@ const Canvas = (props: { caveData: number[][] }) => {
       ctx.closePath();
       ctx.fill();
 
-      // Collision detection
-      const droneX = dronePosition; // X-coordinate of the drone
-
-      // Find the wall segment where the drone is located
-      const droneRow = Math.floor(droneY / wallHeight);
-      if (droneRow < leftWallPoints.length) {
-        const leftWallX = leftWallPoints[droneRow].x;
-        const rightWallX = rightWallPoints[droneRow].x;
-
-        // Check if the drone is colliding with the walls
-        if (
-          droneX < leftWallX + droneWidth ||
-          droneX + droneWidth > rightWallX
-        ) {
-          console.log(
-            droneX,
-            leftWallPoints,
-            rightWallX,
-            "Collision detected!"
-          );
-          toast.error("The drone has been destroyed!");
-          //stopGame();
-        }
-      }
+      colissionDetection(leftWallPoints, rightWallPoints);
     }
   }, [dataChunk]);
 

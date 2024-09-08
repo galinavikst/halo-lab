@@ -7,16 +7,17 @@ import React, { useEffect, useState } from "react";
 import Canvas from "./Canvas";
 import { Oval } from "react-loader-spinner";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { gameState, setUser } from "@/redux/slices/gameSlice";
-import Gauges from "./Gauges";
+import { gameState, setInitSlice, setUser } from "@/redux/slices/gameSlice";
+import { ROUTES } from "@/utils/constants";
+import { useRouter } from "next/navigation";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 const Game = () => {
+  const { push } = useRouter();
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector(gameState);
+  const { user, startIndex, canvasSpeed } = useAppSelector(gameState);
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [caveData, setCaveData] = useState<number[][]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>("");
 
@@ -43,8 +44,6 @@ const Game = () => {
   }, [user, addUser]);
 
   const getUserToken = async (id: string) => {
-    setIsLoading(true);
-
     let token = "";
     const chunks = 4;
 
@@ -56,6 +55,20 @@ const Game = () => {
     dispatch(setUser({ ...user, id, token }));
   };
 
+  const getScore = (arr: number[][]) => {
+    const wallSegment = arr.length / 50;
+    const score =
+      Math.ceil(startIndex / wallSegment) * (user.complexity + canvasSpeed);
+
+    return score.toFixed(2);
+  };
+
+  const backHome = () => {
+    dispatch(setUser({ ...user, id: null }));
+    dispatch(setInitSlice());
+    push(ROUTES.home);
+  };
+
   // wsocket connection handling
   useEffect(() => {
     if (!user.id) return;
@@ -63,10 +76,7 @@ const Game = () => {
     const ws = new WebSocket(WS_URL as string);
 
     ws.onopen = () => {
-      setIsLoading(true);
-
       setConnectionStatus("connected");
-
       ws.send(`player:${user.id}-${user.token}`); // player authentication data
     };
 
@@ -75,12 +85,11 @@ const Game = () => {
 
       if (message === "Player not found") {
         setConnectionStatus(message);
-        setIsLoading(false);
+        backHome();
         ws.close();
       }
 
       if (message === "finished") {
-        setIsLoading(false);
         setConnectionStatus(message);
         ws.close();
       } else {
@@ -92,12 +101,11 @@ const Game = () => {
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
       setConnectionStatus("error");
-      setIsLoading(false);
+      backHome();
     };
 
     ws.onclose = () => {
       ws.close();
-      setIsLoading(false);
     };
 
     return () => {
@@ -111,19 +119,27 @@ const Game = () => {
     <div className="w-[500px]">
       {caveData.length >= 50 ? (
         <>
-          <div>
-            {user.name}, complexity: {user.complexity}
+          <div className="flex gap-3 justify-between">
+            <span>Name: {user.name}</span>
+            <span>Complexity: {user.complexity}</span>
+            <span>
+              Score:
+              {(connectionStatus === "finished" && getScore(caveData)) || 0}
+            </span>
           </div>
-          <Gauges />
           <Canvas caveData={caveData} />
         </>
       ) : (
         <p>
           {connectionStatus}
-          {connectionStatus === "Player not found" && " -> reload page"}
+          {connectionStatus === "Player not found " && (
+            <button className="rounded-lg bg-slate-100" onClick={backHome}>
+              Back to Home
+            </button>
+          )}
         </p>
       )}
-      {isLoading && (
+      {caveData.length < 50 && (
         <div className="w-fit m-auto p-10">
           <Oval
             visible={true}

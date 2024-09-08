@@ -2,6 +2,8 @@
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { gameState, setUser } from "@/redux/slices/gameSlice";
 import React, { FormEvent, useState } from "react";
+import { COMPLEXITY, ROUTES } from "@/utils/constants";
+import { useRouter } from "next/navigation";
 
 interface IUserState {
   name: string;
@@ -9,20 +11,20 @@ interface IUserState {
 }
 
 const UserBlock = () => {
+  const dispatch = useAppDispatch();
+  const { push } = useRouter();
+  const { user } = useAppSelector(gameState);
+
   const [userData, setUserData] = useState<IUserState>({
     name: "",
     complexity: 0,
   });
-  const dispatch = useAppDispatch();
-  const { user } = useAppSelector(gameState);
-  const complexityOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const { name, complexity } = userData;
-    console.log(complexity, name);
-
     dispatch(setUser({ ...user, name, complexity }));
+    push(ROUTES.game);
   };
 
   const handleChange = (name: string, value: string | number) => {
@@ -51,7 +53,7 @@ const UserBlock = () => {
           value={userData.complexity}
           onChange={(e) => handleChange("complexity", e.target.value)}
         >
-          {complexityOptions.map((el) => (
+          {COMPLEXITY.map((el) => (
             <option key={el} value={el}>
               {el}
             </option>

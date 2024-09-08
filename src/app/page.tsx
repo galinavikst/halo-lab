@@ -1,13 +1,11 @@
-import Game from "./components/Game";
+import ScoreBoard from "./components/ScoreBoard";
 import UserBlock from "./components/UserBlock";
-import { Toaster } from "react-hot-toast";
 
-export default async function Home() {
+export default function Home() {
   return (
     <div className="min-h-screen flex gap-3 p-8 font-[family-name:var(--font-geist-sans)]">
       <UserBlock />
-      <Game />
-      <Toaster />
+      <ScoreBoard />
     </div>
   );
 }
