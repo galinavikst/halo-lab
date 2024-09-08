@@ -4,6 +4,11 @@ export const ROUTES: { [key: string]: string } = {
 };
 
 export const COMPLEXITY: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+export const CANVAS_W = 500;
+export const CANVAS_H = 490;
+export const DRONE_W = 10;
+export const WALL_H = 10;
+export const DATA_CHUNK_LENGTH = CANVAS_H / WALL_H + WALL_H;
 
 export const CANVAS_SPEEDS: { speed: number; interval: number }[] = [
   {

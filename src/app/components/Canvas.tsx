@@ -10,7 +10,15 @@ import {
 } from "@/redux/slices/gameSlice";
 import React, { useRef, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { DRONE_SPEEDS, CANVAS_SPEEDS } from "@/utils/constants";
+import {
+  DRONE_SPEEDS,
+  CANVAS_SPEEDS,
+  DATA_CHUNK_LENGTH,
+  DRONE_W,
+  WALL_H,
+  CANVAS_W,
+  CANVAS_H,
+} from "@/utils/constants";
 import { IWallPoints } from "@/utils/types";
 import { ROUTES } from "@/utils/constants";
 import { useRouter } from "next/navigation";
@@ -22,14 +30,12 @@ const Canvas = (props: { caveData: number[][] }) => {
   const { droneDirection, canvasSpeed, startIndex, user } =
     useAppSelector(gameState);
 
-  const [dronePosition, setDronePosition] = useState<number>(250);
+  const [dronePosition, setDronePosition] = useState<number>(CANVAS_W / 2);
   const [droneSpeed, setDroneSpeed] = useState<number>(0);
   const [dataChunk, setDataChunk] = useState<number[][] | null>(null);
   const [canvasIntervalId, setCanvasIntervalId] =
     useState<NodeJS.Timeout | null>(null);
   const [droneId, setDroneId] = useState<NodeJS.Timeout | null>(null);
-
-  const dataChunkLength = 50; // canvas h(500) \ wallHeight
 
   const setCanvasInterval = () => {
     if (canvasIntervalId) clearInterval(canvasIntervalId);
@@ -81,7 +87,7 @@ const Canvas = (props: { caveData: number[][] }) => {
   };
 
   const getDataChunk = () => {
-    const endIndex = startIndex + dataChunkLength;
+    const endIndex = startIndex + DATA_CHUNK_LENGTH;
     const newChunk = props.caveData.slice(startIndex, endIndex);
     setDataChunk(newChunk);
   };
@@ -102,27 +108,18 @@ const Canvas = (props: { caveData: number[][] }) => {
 
   const saveToLocalStorage = () => {
     const savedGames = localStorage.getItem("games");
+    const gameData = {
+      name: user.name,
+      complexity: user.complexity,
+      score: getScore(props.caveData),
+    };
+
     if (savedGames) {
       const gamesArray = JSON.parse(savedGames);
-
-      gamesArray.push({
-        name: user.name,
-        complexity: user.complexity,
-        score: getScore(props.caveData),
-      });
-
+      gamesArray.push(gameData);
       localStorage.setItem("games", JSON.stringify(gamesArray));
     } else {
-      localStorage.setItem(
-        "games",
-        JSON.stringify([
-          {
-            name: user.name,
-            complexity: user.complexity,
-            score: user.score,
-          },
-        ])
-      );
+      localStorage.setItem("games", JSON.stringify([gameData]));
     }
   };
 
@@ -131,18 +128,16 @@ const Canvas = (props: { caveData: number[][] }) => {
     rightWallPoints: IWallPoints[]
   ) => {
     const droneX = dronePosition; // X-coordinate of the drone
-    const droneWidth = 10;
-    const wallHeight = 10;
     const droneY = 0; // top-0 absolute
 
     // Find the wall segment where the drone is located
-    const droneRow = Math.floor(droneY / wallHeight);
+    const droneRow = Math.floor(droneY / WALL_H);
     if (droneRow < leftWallPoints.length) {
       const leftWallX = leftWallPoints[droneRow].x;
       const rightWallX = rightWallPoints[droneRow].x;
 
       // Check if the drone is colliding with the walls
-      if (droneX < leftWallX + droneWidth || droneX + droneWidth > rightWallX) {
+      if (droneX < leftWallX + DRONE_W || droneX + DRONE_W > rightWallX) {
         toast.error("The drone has been destroyed!");
         stopGame();
         backHome();
@@ -151,7 +146,7 @@ const Canvas = (props: { caveData: number[][] }) => {
   };
 
   const getScore = (arr: number[][]) => {
-    const wallSegment = arr.length / 50;
+    const wallSegment = arr.length / DATA_CHUNK_LENGTH;
     const score =
       Math.ceil(startIndex / wallSegment) * (user.complexity + canvasSpeed);
 
@@ -192,8 +187,6 @@ const Canvas = (props: { caveData: number[][] }) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const wallHeight = 10;
-
     // drawing styles
     ctx.fillStyle = "#fff";
     ctx.strokeStyle = "#fff";
@@ -223,7 +216,7 @@ const Canvas = (props: { caveData: number[][] }) => {
         const right = el[1];
         const xLeft = centerX + left;
         const xRight = centerX + right;
-        const y = index * wallHeight;
+        const y = index * WALL_H;
 
         leftWallPoints.push({ x: xLeft, y });
         rightWallPoints.push({ x: xRight, y });
@@ -271,8 +264,8 @@ const Canvas = (props: { caveData: number[][] }) => {
       <canvas
         className=" bg-slate-600 border-2 border-black w-[500px]"
         ref={canvasRef}
-        width={500}
-        height={490}
+        width={CANVAS_W}
+        height={CANVAS_H}
         {...props}
       />
 

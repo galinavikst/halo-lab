@@ -8,7 +8,7 @@ import Canvas from "./Canvas";
 import { Oval } from "react-loader-spinner";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { gameState, setInitSlice, setUser } from "@/redux/slices/gameSlice";
-import { ROUTES } from "@/utils/constants";
+import { DATA_CHUNK_LENGTH, ROUTES } from "@/utils/constants";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -59,7 +59,7 @@ const Game = () => {
   };
 
   const getScore = (arr: number[][]) => {
-    const wallSegment = arr.length / 50;
+    const wallSegment = arr.length / DATA_CHUNK_LENGTH;
     const score =
       Math.ceil(startIndex / wallSegment) * (user.complexity + canvasSpeed);
 
@@ -120,7 +120,7 @@ const Game = () => {
 
   return (
     <div className="w-[500px]">
-      {caveData.length >= 50 ? (
+      {caveData.length >= DATA_CHUNK_LENGTH ? (
         <>
           <div className="flex gap-3 justify-between">
             <span>Name: {user.name}</span>
@@ -142,7 +142,7 @@ const Game = () => {
           )}
         </p>
       )}
-      {caveData.length < 50 && (
+      {caveData.length < DATA_CHUNK_LENGTH && (
         <div className="w-fit m-auto p-10">
           <Oval
             visible={true}
