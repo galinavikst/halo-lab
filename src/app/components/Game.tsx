@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { gameState, setInitSlice, setUser } from "@/redux/slices/gameSlice";
 import { ROUTES } from "@/utils/constants";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
@@ -34,6 +35,8 @@ const Game = () => {
         }).unwrap();
         if (!user.id) getUserToken(resp.id);
       } catch (error) {
+        toast.error("Please, register new game");
+        push(ROUTES.home);
         console.error(error);
       }
     };
@@ -133,7 +136,7 @@ const Game = () => {
         <p>
           {connectionStatus}
           {connectionStatus === "Player not found " && (
-            <button className="rounded-lg bg-slate-100" onClick={backHome}>
+            <button className="btn" onClick={backHome}>
               Back to Home
             </button>
           )}

@@ -25,3 +25,12 @@ body {
     text-wrap: balance;
   }
 }
+
+@layer components {
+  .input {
+    @apply px-2 bg-transparent border-gray-400 border-b w-full;
+  }
+  .btn {
+    @apply py-2 px-5 bg-violet-500 text-white font-semibold rounded-full shadow-md hover:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-400 focus:ring-opacity-75;
+  }
+}

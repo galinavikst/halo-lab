@@ -282,7 +282,7 @@ const Canvas = (props: { caveData: number[][] }) => {
       ></div>
       <button
         onClick={canvasIntervalId ? stopGame : startGame}
-        className="p-3 border-2 rounded-md my-5"
+        className="btn m-3"
       >
         {canvasIntervalId ? "Stop" : "Play"}
       </button>

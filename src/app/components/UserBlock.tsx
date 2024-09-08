@@ -32,37 +32,40 @@ const UserBlock = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grow max-w-[300px] flex flex-col gap-3 my-5"
-    >
+    <div className="my-4">
       <p className="mb-5">Register Game:</p>
-      <label>
-        <small>Player name</small>
-        <input
-          className="border-b w-full outiline-none focus: outline-none"
-          value={userData.name}
-          onChange={(e) => handleChange("name", e.target.value.trim())}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1">
-        <small>Complexity</small>
-        <select
-          className="border-b w-full"
-          value={userData.complexity}
-          onChange={(e) => handleChange("complexity", e.target.value)}
-        >
-          {COMPLEXITY.map((el) => (
-            <option key={el} value={el}>
-              {el}
-            </option>
-          ))}
-        </select>
-      </label>
 
-      <button className="p-3 border-2 rounded-md my-5 w-fit">Ready</button>
-    </form>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-slate-100 rounded-lg shadow p-3 grow max-w-[300px] flex flex-col gap-3 my-5"
+      >
+        <label>
+          <small>Player name</small>
+          <input
+            className="input outline-none focus:outline-none"
+            value={userData.name}
+            onChange={(e) => handleChange("name", e.target.value.trim())}
+            required
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <small>Complexity</small>
+          <select
+            className="input outline-none focus:outline-none"
+            value={userData.complexity}
+            onChange={(e) => handleChange("complexity", e.target.value)}
+          >
+            {COMPLEXITY.map((el) => (
+              <option key={el} value={el}>
+                {el}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button className="btn">Ready</button>
+      </form>
+    </div>
   );
 };
 
