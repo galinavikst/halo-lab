@@ -16,7 +16,7 @@ const ScoreBoard = () => {
 
   return (
     <div className="m-4 px-3 flex flex-col gap-5">
-      <h1>ScoreBoard</h1>
+      <h1 className="font-semibold">ScoreBoard</h1>
       {games.length ? (
         <ul className="flex flex-col gap-3">
           {games.map((el: IWinner, index: number) => (

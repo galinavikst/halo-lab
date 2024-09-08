@@ -33,7 +33,7 @@ const UserBlock = () => {
 
   return (
     <div className="my-4">
-      <p className="mb-5">Register Game:</p>
+      <p className="mb-5 font-semibold">Register Game:</p>
 
       <form
         onSubmit={handleSubmit}

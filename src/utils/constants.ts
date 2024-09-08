@@ -90,3 +90,28 @@ export const DRONE_SPEEDS: { speed: number; interval: number }[] = [
     interval: 10,
   },
 ];
+
+export const RULES = [
+  {
+    symbol: "⇧",
+    key: "ArrowUp",
+    description: "Increase vertical speed",
+  },
+  {
+    symbol: "⇩",
+    key: "ArrowDown",
+    description: "Decrease vertical speed",
+  },
+  {
+    symbol: "⇦",
+    key: "ArrowLeft",
+    description:
+      "Decrease the drone's horizontal speed and move it to the left",
+  },
+  {
+    symbol: "⇨",
+    key: "ArrowRight",
+    description:
+      "Increase the drone's horizontal speed and move it to the right",
+  },
+];
