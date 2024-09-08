@@ -1,5 +1,5 @@
-# Store
-Drone Game Features:
+# Speed Game
+Drone Speed Game Features:
   - Register player with posibility to choose level complexity.
   - Change vertical and horizontal speed.
   - Change moving direction.
