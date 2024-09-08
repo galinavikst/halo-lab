@@ -30,7 +30,7 @@ Drone Speed Game Features:
 2. **Navigate to the project directory:**
 
     ```bash
-    cd studiopresto-store
+    cd halo-lab
     ```
 
 3. **Install the dependencies:**
